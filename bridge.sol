@@ -304,7 +304,7 @@ contract Container {
         address[] addresses;
     }
 
-    uint256 MaxItemAdressNum = 255;
+    uint256 constant MaxItemAdressNum = 255;
     mapping (bytes32 => Item) private container;
     // bool private _nativePaused = false;
 
@@ -436,7 +436,7 @@ contract BridgeAdmin is Container {
         require(ownerCount <= MaxItemAdressNum
         && _required <= ownerCount
         && _required > 0
-            && ownerCount > 0);
+            && ownerCount > 0, "invalid ownerCount or _required number");
         _;
     }
 
@@ -761,7 +761,7 @@ contract Bridge is BridgeAdmin, Pausable {
     uint256 public defaultNativeSendInWithdrawToken = 1e17;
     mapping (string=>uint256) public fee;
     mapping (string=>mapping(address=>uint256)) public minDeposit;
-    address native = address(0x0000000000000000000000000000000000000000);
+    address constant native = address(0x0000000000000000000000000000000000000000);
 
     event Deposit(address indexed sender, uint value);
     event DepositNative(address indexed from, uint256 nativeValue, uint256 value, string targetAddress, string chain, bool buyNative);
