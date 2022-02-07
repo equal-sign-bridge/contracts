@@ -12,7 +12,7 @@
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity 0.7.0;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -175,7 +175,7 @@ library SafeMath {
 
 
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity 0.7.0;
 
 /*
  * @dev Provides information about the current execution context, including the
@@ -203,7 +203,7 @@ abstract contract Context {
 
 
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity 0.7.0;
 
 /**
  * @dev Contract module which allows children to implement an emergency stop
@@ -571,7 +571,7 @@ contract BridgeAdmin is Container {
 
 
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity 0.7.0;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.

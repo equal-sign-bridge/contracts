@@ -2,7 +2,7 @@
  *Submitted for verification at hecoinfo.com on 2021-02-07
 */
 
-pragma solidity ^0.5.0;
+pragma solidity 0.7.0;
 
 
 /// @title Multisignature wallet - Allows multiple parties to agree on transactions before execution.
