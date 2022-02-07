@@ -225,7 +225,7 @@ abstract contract Pausable is Context {
      */
     event Unpaused(address account);
 
-    bool private _paused;
+    bool private _paused = true;
 
     /**
      * @dev Initializes the contract in unpaused state.
@@ -375,7 +375,7 @@ pragma solidity ^0.7.0;
 contract BridgeStorage is Container {
     string public constant name = "BridgeStorage";
 
-    address private caller;
+    address immutable private caller;
 
     constructor(address aCaller) {
         caller = aCaller;
@@ -669,7 +669,7 @@ contract BridgeLogic {
     uint256 public constant WITHDRAWTASK = 1;
 
     address private caller;
-    BridgeStorage private store;
+    BridgeStorage immutable private store;
 
     constructor(address aCaller) {
         caller = aCaller;
@@ -722,8 +722,6 @@ contract BridgeLogic {
         store.removeTask(taskHash);
 
     }
-
-
 }
 
 
