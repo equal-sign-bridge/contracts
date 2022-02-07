@@ -668,8 +668,8 @@ contract BridgeLogic {
     uint256 public constant TASKDONE = 3;
     uint256 public constant WITHDRAWTASK = 1;
 
-    address private caller;
-    BridgeStorage immutable private store;
+    address immutable private caller;
+    BridgeStorage  private store;
 
     constructor(address aCaller) {
         caller = aCaller;
