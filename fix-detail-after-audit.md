@@ -29,7 +29,7 @@
     fixed
 
 ## ESC-07 Redundant code components
-    remains
+    fixed
 
 ## ESC-08 Missing emit events
     remains

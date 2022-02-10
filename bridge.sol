@@ -225,13 +225,13 @@ abstract contract Pausable is Context {
      */
     event Unpaused(address account);
 
-    bool private _paused = true;
+    bool private _paused = false;
 
     /**
-     * @dev Initializes the contract in unpaused state.
+     * @dev Initializes the contract in paused state.
      */
     constructor () internal {
-        _paused = false;
+        _paused = true;
     }
 
     /**
@@ -294,7 +294,7 @@ abstract contract Pausable is Context {
 // File contracts/Container.sol
 
 
-pragma solidity ^0.7.0;
+pragma solidity 0.7.0;
 
 contract Container {
 
@@ -316,6 +316,7 @@ contract Container {
         }
         return false;
     }
+    
     function getItemAddresses(bytes32 _id) internal view returns(address[] memory){
         return container[_id].addresses;
     }
@@ -338,6 +339,7 @@ contract Container {
         require(container[_id].addresses.length < MaxItemAdressNum, "too many addresses");
         container[_id].addresses.push(_oneAddress);
     }
+
     function removeItemAddresses(bytes32 _id) internal {
         delete container[_id].addresses;
     }
@@ -370,12 +372,14 @@ contract Container {
 // File contracts/BridgeStorage.sol
 
 
-pragma solidity ^0.7.0;
+pragma solidity 0.7.0;
 
 contract BridgeStorage is Container {
     string public constant name = "BridgeStorage";
 
     address immutable private caller;
+
+    mapping (string => mapping (address => bool)) public supporterExistsByProof;
 
     constructor(address aCaller) {
         caller = aCaller;
@@ -386,8 +390,8 @@ contract BridgeStorage is Container {
         _;
     }
 
-    function supporterExists(bytes32 taskHash, address user) public view returns(bool) {
-          return itemAddressExists(taskHash, user);
+    function supporterExists(bytes32 taskHash, string memory proof, address user) public view returns(bool) {
+        return supporterExistsByProof[proof][user] || itemAddressExists(taskHash, user);
     }
 
     function setTaskInfo(bytes32 taskHash, uint256 taskType, uint256 status) external onlyCaller {
@@ -398,13 +402,15 @@ contract BridgeStorage is Container {
         return getItemInfo(taskHash);
     }
 
-    function addSupporter(bytes32 taskHash, address oneAddress) external onlyCaller{
+    function addSupporter(bytes32 taskHash, string memory proof, address oneAddress) external onlyCaller{
         addItemAddress(taskHash, oneAddress);
+        supporterExistsByProof[proof][oneAddress] = true;
     }
 
     function removeAllSupporter(bytes32 taskHash) external onlyCaller {
         removeItemAddresses(taskHash);
     }
+
     function removeTask(bytes32 taskHash)external onlyCaller{
         removeItem(taskHash);
     }
@@ -414,7 +420,7 @@ contract BridgeStorage is Container {
 // File contracts/BridgeAdmin.sol
 
 
-pragma solidity ^0.7.0;
+pragma solidity 0.7.0;
 
 contract BridgeAdmin is Container {
     bytes32 internal constant OWNERHASH = 0x02016836a56b71f0d02689e69e326f4f4c1b9057164ef592671cf0d37c8040c0;
@@ -651,7 +657,7 @@ interface IERC20 {
 // File contracts/BridgeLogic.sol
 
 
-pragma solidity ^0.7.0;
+pragma solidity 0.7.0;
 
 
 
@@ -680,10 +686,10 @@ contract BridgeLogic {
         _;
     }
 
-    modifier operatorExists(address operator) {
-        require(store.supporterExists(OPERATORHASH, operator), "wrong operator");
-        _;
-    }
+    // modifier operatorExists(address operator) {
+    //     require(store.supporterExists(OPERATORHASH, operator), "wrong operator");
+    //     _;
+    // }
 
     function resetStoreLogic(address storeAddress) external onlyCaller {
         store = BridgeStorage(storeAddress);
@@ -693,14 +699,14 @@ contract BridgeLogic {
         return address(store);
     }
 
-    function supportTask(uint256 taskType, bytes32 taskHash, address oneAddress, uint256 requireNum) external onlyCaller returns(uint256){
-        require(!store.supporterExists(taskHash, oneAddress), "supporter already exists");
+    function supportTask(uint256 taskType, bytes32 taskHash, string memory proof, address oneAddress, uint256 requireNum) external onlyCaller returns(uint256){
+        require(!store.supporterExists(taskHash, proof, oneAddress), "supporter already exists");
         (uint256 theTaskType,uint256 theTaskStatus,uint256 theSupporterNum) = store.getTaskInfo(taskHash);
         require(theTaskStatus < TASKDONE, "wrong status");
 
         if (theTaskStatus != TASKINIT)
             require(theTaskType == taskType, "task type not match");
-        store.addSupporter(taskHash, oneAddress);
+        store.addSupporter(taskHash, proof, oneAddress);
         theSupporterNum++;
         if(theSupporterNum >= requireNum)
             theTaskStatus = TASKDONE;
@@ -727,7 +733,7 @@ contract BridgeLogic {
 
 // File contracts/ERC20Sample.sol
 
-pragma solidity ^0.7.0;
+pragma solidity 0.7.0;
 
 
 abstract contract ERC20Template is IERC20 {
@@ -746,7 +752,7 @@ abstract contract ERC20Template is IERC20 {
 // File contracts/Bridge.sol
 
 
-pragma solidity ^0.7.0;
+pragma solidity 0.7.0;
 
 contract Bridge is BridgeAdmin, Pausable {
 
@@ -820,7 +826,7 @@ contract Bridge is BridgeAdmin, Pausable {
     {
         require(address(this).balance >= value, "not enough native token");
         require(taskHash == keccak256((abi.encodePacked(to,value,proof))),"taskHash is wrong");
-        uint256 status = logic.supportTask(logic.WITHDRAWTASK(), taskHash, msg.sender, operatorRequireNum);
+        uint256 status = logic.supportTask(logic.WITHDRAWTASK(), taskHash, proof, msg.sender, operatorRequireNum);
 
         if (status == logic.TASKPROCESSING()){
             emit WithdrawingNative(to, value, proof);
@@ -840,7 +846,7 @@ contract Bridge is BridgeAdmin, Pausable {
     returns (bool)
     {
         require(taskHash == keccak256((abi.encodePacked(to,value,proof))),"taskHash is wrong");
-        uint256 status = logic.supportTask(logic.WITHDRAWTASK(), taskHash, msg.sender, operatorRequireNum);
+        uint256 status = logic.supportTask(logic.WITHDRAWTASK(), taskHash, proof, msg.sender, operatorRequireNum);
 
         if (status == logic.TASKPROCESSING()){
             emit WithdrawingToken(to, _token, value, proof);
@@ -860,7 +866,7 @@ contract Bridge is BridgeAdmin, Pausable {
     }
 
     function modifyAdminAddress(string memory class, address oldAddress, address newAddress) public whenPaused {
-        require(newAddress != address(0x0), "wrong address");
+        require(newAddress != address(0x0), "zero address");
         bool flag = modifyAddress(class, oldAddress, newAddress);
         if(flag){
             bytes32 classHash = keccak256(abi.encodePacked(class));
@@ -892,7 +898,7 @@ contract Bridge is BridgeAdmin, Pausable {
     whenPaused onlyOwner external
     {
         require(address(this).balance >= value, "value to large");
-        require(to != address(0x0), "wrong receiving address");
+        require(to != address(0x0), "zero receiving address");
         payable(to).transfer(value);
     }
 
